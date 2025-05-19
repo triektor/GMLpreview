@@ -8,110 +8,80 @@
   <style>
     #map { height: 400px; margin-bottom: 1rem; }
     body { font-family: Arial, sans-serif; margin: 20px; }
-    .controls { margin-bottom: 1rem; }
-    .info-box {
-      border: 1px solid #ccc;
-      padding: 10px;
-      margin-top: 10px;
-      max-height: 200px;
-      overflow-y: auto;
-      background-color: #f9f9f9;
-    }
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      margin-top: 1rem;
-    }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 8px;
-    }
-    th {
-      background-color: #f2f2f2;
-    }
+    .tabs button { margin-right: 10px; padding: 5px 10px; cursor: pointer; }
+    .tab-content { display: none; margin-top: 10px; }
+    .tab-content.active { display: block; }
+    .info-box, table { background: #f9f9f9; border: 1px solid #ccc; padding: 10px; margin-top: 10px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ddd; padding: 8px; }
+    th { background-color: #f2f2f2; }
   </style>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.8.0/proj4.js"></script>
 </head>
 <body>
   <h1>GML Viewer & Exporter</h1>
 
-  <div class="controls">
+  <div>
     <input type="file" id="fileInput" accept=".gml" />
-    <button onclick="exportToJSON()">Eksportuj do JSON</button>
-    <button onclick="exportToExcel()">Eksportuj do Excel</button>
-    <button onclick="exportToDXF()">Eksportuj do DXF</button>
   </div>
 
   <div id="map"></div>
 
-  <div class="info-box" id="featureInfo">Kliknij obiekt na mapie, aby wyświetlić szczegóły.</div>
+  <div class="tabs">
+    <button onclick="switchTab('table')">Tabela</button>
+    <button onclick="switchTab('info')">Atrybuty obiektu</button>
+    <button onclick="switchTab('layers')">Warstwy</button>
+  </div>
 
-  <div id="dataTableContainer"></div>
-
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tarikjabiri/dxf-writer/dist/dxf-writer.min.js"></script>
+  <div id="tab-table" class="tab-content"></div>
+  <div id="tab-info" class="tab-content">Kliknij obiekt na mapie, aby wyświetlić szczegóły.</div>
+  <div id="tab-layers" class="tab-content"></div>
 
   <script>
-    let geojsonData = null;
     const map = L.map('map').setView([52, 19], 6);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
+    const layerGroups = {};
+    const featuresByClass = {};
     const epsgDefs = {
-      'EPSG:2176': '+proj=tmerc +lat_0=0 +lon_0=15 +k=0.999923 +x_0=5500000 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs +type=crs',
-      'EPSG:2177': '+proj=tmerc +lat_0=0 +lon_0=18 +k=0.999923 +x_0=6500000 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs +type=crs',
-      'EPSG:2178': '+proj=tmerc +lat_0=0 +lon_0=21 +k=0.999923 +x_0=7500000 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs +type=crs',
-      'EPSG:2179': '+proj=tmerc +lat_0=0 +lon_0=24 +k=0.999923 +x_0=8500000 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs +type=crs'
+      'EPSG:2176': '+proj=tmerc +lat_0=0 +lon_0=15 +k=0.999923 +x_0=5500000 +y_0=0 +ellps=GRS80 +units=m +no_defs',
+      'EPSG:2177': '+proj=tmerc +lat_0=0 +lon_0=18 +k=0.999923 +x_0=6500000 +y_0=0 +ellps=GRS80 +units=m +no_defs',
+      'EPSG:2178': '+proj=tmerc +lat_0=0 +lon_0=21 +k=0.999923 +x_0=7500000 +y_0=0 +ellps=GRS80 +units=m +no_defs',
+      'EPSG:2179': '+proj=tmerc +lat_0=0 +lon_0=24 +k=0.999923 +x_0=8500000 +y_0=0 +ellps=GRS80 +units=m +no_defs'
     };
 
-    Object.entries(epsgDefs).forEach(([code, def]) => {
-      proj4.defs(code, def);
-    });
+    Object.entries(epsgDefs).forEach(([code, def]) => proj4.defs(code, def));
 
     document.getElementById('fileInput').addEventListener('change', handleFile);
+
+    function switchTab(id) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.getElementById(`tab-${id}`).classList.add('active');
+    }
 
     function handleFile(evt) {
       const file = evt.target.files[0];
       const reader = new FileReader();
       reader.onload = function(e) {
-        const xmlText = e.target.result;
-        const parser = new DOMParser();
-        const xml = parser.parseFromString(xmlText, 'application/xml');
-
-        geojsonData = parseGMLtoGeoJSON(xml);
-        const layer = L.geoJSON(geojsonData, {
-          onEachFeature: (feature, layer) => {
-            layer.on('click', () => showFeatureInfo(feature.properties));
-          }
-        });
-        layer.addTo(map);
-        map.fitBounds(layer.getBounds());
-        buildDataTable(geojsonData.features);
+        const xml = new DOMParser().parseFromString(e.target.result, 'application/xml');
+        parseGML(xml);
       };
       reader.readAsText(file);
     }
 
     function transformCoords(x, y, srsName) {
-      const src = srsName.includes('EPSG') ? srsName.split('EPSG::')[1] : null;
-      const code = `EPSG:${src}`;
-
-      console.log('Transformuję', x, y, 'z', srsName, '→', code);
-
-      if (!proj4.defs(code)) {
-        console.warn('Nieobsługiwany układ:', code);
-        return [x, y];
-      }
-      return proj4(code, 'EPSG:4326', [y, x]);
+      const code = `EPSG:${srsName.split('EPSG::')[1]}`;
+      return proj4.defs(code) ? proj4(code, 'EPSG:4326', [y, x]) : [x, y];
     }
 
-    function parseGMLtoGeoJSON(xml) {
-      const features = [];
+    function parseGML(xml) {
       const members = xml.getElementsByTagNameNS('*', 'featureMember');
-
       Array.from(members).forEach(member => {
         const feature = member.firstElementChild;
+        const cls = feature.localName;
         const geom = feature.querySelector('Point, LineString, Polygon');
         if (!geom) return;
 
@@ -119,37 +89,23 @@
         let geometry = null;
 
         if (geom.localName === 'Point') {
-          const coords = geom.getElementsByTagNameNS('*', 'pos')[0]?.textContent.split(' ').map(Number);
+          const coords = geom.querySelector('pos').textContent.split(' ').map(Number);
           const [x, y] = transformCoords(coords[0], coords[1], srsName);
-
-          console.log('Wynik', x, y);
-
-          geometry = {
-            type: 'Point',
-            coordinates: [x, y]
-          };
+          geometry = { type: 'Point', coordinates: [x, y] };
         } else if (geom.localName === 'LineString') {
-          const coords = geom.getElementsByTagNameNS('*', 'posList')[0]?.textContent.trim().split(/\s+/).map(Number);
+          const coords = geom.querySelector('posList').textContent.trim().split(/\s+/).map(Number);
           const coordinates = [];
           for (let i = 0; i < coords.length; i += 2) {
-            const [x, y] = transformCoords(coords[i], coords[i + 1], srsName);
-            coordinates.push([x, y]);
+            coordinates.push(transformCoords(coords[i], coords[i + 1], srsName));
           }
-          geometry = {
-            type: 'LineString',
-            coordinates
-          };
+          geometry = { type: 'LineString', coordinates };
         } else if (geom.localName === 'Polygon') {
-          const posList = geom.getElementsByTagNameNS('*', 'posList')[0]?.textContent.trim().split(/\s+/).map(Number);
+          const posList = geom.querySelector('posList').textContent.trim().split(/\s+/).map(Number);
           const coordinates = [];
           for (let i = 0; i < posList.length; i += 2) {
-            const [x, y] = transformCoords(posList[i], posList[i + 1], srsName);
-            coordinates.push([x, y]);
+            coordinates.push(transformCoords(posList[i], posList[i + 1], srsName));
           }
-          geometry = {
-            type: 'Polygon',
-            coordinates: [coordinates]
-          };
+          geometry = { type: 'Polygon', coordinates: [coordinates] };
         }
 
         const properties = {};
@@ -157,89 +113,66 @@
           if (!el.children.length) properties[el.localName] = el.textContent;
         });
 
-        features.push({
-          type: 'Feature',
-          geometry,
-          properties
-        });
+        if (!featuresByClass[cls]) featuresByClass[cls] = [];
+        featuresByClass[cls].push({ type: 'Feature', geometry, properties });
       });
 
-      return {
-        type: 'FeatureCollection',
-        features
-      };
+      Object.entries(featuresByClass).forEach(([cls, features]) => {
+        const layer = L.geoJSON({ type: 'FeatureCollection', features }, {
+          onEachFeature: (feature, layer) => {
+            layer.on('click', () => showFeatureInfo(feature.properties));
+          }
+        }).addTo(map);
+
+        layerGroups[cls] = layer;
+        addLayerControl(cls, layer);
+      });
+
+      switchTab('table');
+      buildDataTable();
     }
 
     function showFeatureInfo(properties) {
-      const infoBox = document.getElementById('featureInfo');
-      infoBox.innerHTML = '<strong>Dane obiektu:</strong><br>' +
+      const info = document.getElementById('tab-info');
+      info.innerHTML = '<strong>Dane obiektu:</strong><br>' +
         Object.entries(properties).map(([k, v]) => `<strong>${k}</strong>: ${v}`).join('<br>');
     }
 
-    function buildDataTable(features) {
-      const container = document.getElementById('dataTableContainer');
-      if (features.length === 0) return;
-
-      const keys = Object.keys(features[0].properties);
-      let html = '<table><thead><tr>' + keys.map(k => `<th>${k}</th>`).join('') + '</tr></thead><tbody>';
-      features.forEach(f => {
-        html += '<tr>' + keys.map(k => `<td>${f.properties[k] || ''}</td>`).join('') + '</tr>';
+    function buildDataTable() {
+      const tableDiv = document.getElementById('tab-table');
+      let html = '';
+      Object.entries(featuresByClass).forEach(([cls, features]) => {
+        if (features.length === 0) return;
+        const keys = Object.keys(features[0].properties);
+        html += `<h3>${cls}</h3><table><thead><tr>${keys.map(k => `<th>${k}</th>`).join('')}</tr></thead><tbody>`;
+        features.forEach(f => {
+          html += '<tr>' + keys.map(k => `<td>${f.properties[k] || ''}</td>`).join('') + '</tr>';
+        });
+        html += '</tbody></table>';
       });
-      html += '</tbody></table>';
-      container.innerHTML = html;
+      tableDiv.innerHTML = html;
     }
 
-    function exportToJSON() {
-      if (!geojsonData) return alert('Brak danych.');
-      const blob = new Blob([JSON.stringify(geojsonData)], { type: 'application/json' });
-      downloadBlob(blob, 'dane.json');
-    }
-
-    function exportToExcel() {
-      if (!geojsonData) return alert('Brak danych.');
-      const rows = geojsonData.features.map(f => ({
-        ...f.properties,
-        geometry_type: f.geometry.type,
-        geometry: JSON.stringify(f.geometry.coordinates)
-      }));
-      const worksheet = XLSX.utils.json_to_sheet(rows);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Dane');
-      XLSX.writeFile(workbook, 'dane.xlsx');
-    }
-
-    function exportToDXF() {
-      if (!geojsonData) return alert('Brak danych.');
-      const dxf = new DxfWriter();
-      geojsonData.features.forEach(f => {
-        const geom = f.geometry;
-        if (geom.type === 'Point') {
-          const [x, y] = geom.coordinates;
-          dxf.addPoint(x, y);
-        } else if (geom.type === 'LineString') {
-          for (let i = 0; i < geom.coordinates.length - 1; i++) {
-            const [x1, y1] = geom.coordinates[i];
-            const [x2, y2] = geom.coordinates[i + 1];
-            dxf.addLine(x1, y1, x2, y2);
-          }
-        } else if (geom.type === 'Polygon') {
-          const coords = geom.coordinates[0];
-          for (let i = 0; i < coords.length - 1; i++) {
-            const [x1, y1] = coords[i];
-            const [x2, y2] = coords[i + 1];
-            dxf.addLine(x1, y1, x2, y2);
-          }
+    function addLayerControl(name, layer) {
+      const container = document.getElementById('tab-layers');
+      const id = `layer-${name}`;
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.id = id;
+      checkbox.checked = true;
+      checkbox.addEventListener('change', () => {
+        if (checkbox.checked) {
+          map.addLayer(layer);
+        } else {
+          map.removeLayer(layer);
         }
       });
-      const blob = new Blob([dxf.stringify()], { type: 'application/dxf' });
-      downloadBlob(blob, 'dane.dxf');
-    }
-
-    function downloadBlob(blob, filename) {
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = filename;
-      a.click();
+      const label = document.createElement('label');
+      label.htmlFor = id;
+      label.textContent = name;
+      container.appendChild(checkbox);
+      container.appendChild(label);
+      container.appendChild(document.createElement('br'));
     }
   </script>
 </body>

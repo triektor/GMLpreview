@@ -59,16 +59,15 @@
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
-    // Definicje układów EPSG:2180 (PL-2000, 4 strefy)
-    const epsg2180_defs = {
-      5: "+proj=tmerc +lat_0=0 +lon_0=15 +k=0.999923 +x_0=500000 +y_0=0 +ellps=GRS80 +units=m +no_defs",
-      6: "+proj=tmerc +lat_0=0 +lon_0=18 +k=0.999923 +x_0=500000 +y_0=0 +ellps=GRS80 +units=m +no_defs",
-      7: "+proj=tmerc +lat_0=0 +lon_0=21 +k=0.999923 +x_0=500000 +y_0=0 +ellps=GRS80 +units=m +no_defs",
-      8: "+proj=tmerc +lat_0=0 +lon_0=24 +k=0.999923 +x_0=500000 +y_0=0 +ellps=GRS80 +units=m +no_defs"
+    const epsgDefs = {
+      'EPSG:2176': '+proj=tmerc +lat_0=0 +lon_0=15 +k=0.999923 +x_0=5500000 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs +type=crs',
+      'EPSG:2177': '+proj=tmerc +lat_0=0 +lon_0=18 +k=0.999923 +x_0=6500000 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs +type=crs',
+      'EPSG:2178': '+proj=tmerc +lat_0=0 +lon_0=21 +k=0.999923 +x_0=7500000 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs +type=crs',
+      'EPSG:2179': '+proj=tmerc +lat_0=0 +lon_0=24 +k=0.999923 +x_0=8500000 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs +type=crs'
     };
 
-    Object.entries(epsg2180_defs).forEach(([zone, def]) => {
-      proj4.defs(`EPSG:218${zone}`, def);
+    Object.entries(epsgDefs).forEach(([code, def]) => {
+      proj4.defs(code, def);
     });
 
     document.getElementById('fileInput').addEventListener('change', handleFile);
@@ -94,15 +93,17 @@
       reader.readAsText(file);
     }
 
-    function detectPL2000Zone(x) {
-      const zone = Math.floor((x - 500000) / 1000000) + 5;
-      return `EPSG:218${zone}`;
-    }
+    function transformCoords(x, y, srsName) {
+      const src = srsName.includes('EPSG') ? srsName.split('EPSG::')[1] : null;
+      const code = `EPSG:${src}`;
 
-    function transformCoords(x, y) {
-      const src = detectPL2000Zone(x);
-      const dst = 'EPSG:4326';
-      return proj4(src, dst, [x, y]);
+      console.log('Transformuję', x, y, 'z', srsName, '→', code);
+
+      if (!proj4.defs(code)) {
+        console.warn('Nieobsługiwany układ:', code);
+        return [x, y];
+      }
+      return proj4(code, 'EPSG:4326', [y, x]);
     }
 
     function parseGMLtoGeoJSON(xml) {
@@ -114,10 +115,15 @@
         const geom = feature.querySelector('Point, LineString, Polygon');
         if (!geom) return;
 
+        const srsName = geom.getAttribute('srsName') || '';
         let geometry = null;
+
         if (geom.localName === 'Point') {
           const coords = geom.getElementsByTagNameNS('*', 'pos')[0]?.textContent.split(' ').map(Number);
-          const [x, y] = transformCoords(coords[0], coords[1]);
+          const [x, y] = transformCoords(coords[0], coords[1], srsName);
+
+          console.log('Wynik', x, y);
+
           geometry = {
             type: 'Point',
             coordinates: [x, y]
@@ -126,7 +132,7 @@
           const coords = geom.getElementsByTagNameNS('*', 'posList')[0]?.textContent.trim().split(/\s+/).map(Number);
           const coordinates = [];
           for (let i = 0; i < coords.length; i += 2) {
-            const [x, y] = transformCoords(coords[i], coords[i + 1]);
+            const [x, y] = transformCoords(coords[i], coords[i + 1], srsName);
             coordinates.push([x, y]);
           }
           geometry = {
@@ -137,7 +143,7 @@
           const posList = geom.getElementsByTagNameNS('*', 'posList')[0]?.textContent.trim().split(/\s+/).map(Number);
           const coordinates = [];
           for (let i = 0; i < posList.length; i += 2) {
-            const [x, y] = transformCoords(posList[i], posList[i + 1]);
+            const [x, y] = transformCoords(posList[i], posList[i + 1], srsName);
             coordinates.push([x, y]);
           }
           geometry = {

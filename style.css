@@ -1,0 +1,68 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .main-layout {
+    display: flex;
+    height: 90vh;
+  }
+  
+  #map {
+    flex: 3;
+    height: 100%;
+  }
+  
+  .side-panel {
+    flex: 2;
+    padding: 1rem;
+    overflow-y: auto;
+    border-left: 1px solid #ccc;
+    background: #f9f9f9;
+  }
+  
+  .tabs {
+    margin-bottom: 10px;
+    padding: 4px;
+    border-radius: 8px;
+    border: 2px solid #005e99;
+  }
+  
+  .tabs button {
+    margin-right: 10px;
+    padding: 5px 10px;
+    cursor: pointer;
+  }
+  
+  .tab-content {
+    display: none;
+  }
+  
+  .tab-content.active {
+    display: block;
+  }
+  
+  table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+  
+  th, td {
+    border: 1px solid #ddd;
+    padding: 8px;
+  }
+  
+  th {
+    background-color: #f2f2f2;
+  }
+
+  .dzialka-label div {
+    font-size: 12px;
+    font-weight: bold;
+    color: black;
+    text-shadow: 1px 1px 2px white;
+    pointer-events: none;
+  }
+  
+  

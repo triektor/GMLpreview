@@ -13,21 +13,22 @@
   <h1>GML Viewer & Exporter</h1>
 
   <div>
-    <input type="file" id="fileInput" accept=".gml" />
+    <div class="tabs">
+        <input type="file" id="fileInput" accept=".gml" />
+        <button onclick="zoomToData()">Pokaż wszystkie obiekty</button>
+        <button onclick="switchTab('table', 'Tabela')">Tabela</button>
+        <button onclick="switchTab('info', 'Atrybuty obiektu')">Atrybuty obiektu</button>
+        <button onclick="switchTab('layers', 'Warstwy')">Warstwy</button>
+    </div>
   </div>
 
   <div class="main-layout">
     <div id="map"></div>
   
     <div class="side-panel">
-      <div class="tabs">
-        <button onclick="switchTab('table')">Tabela</button>
-        <button onclick="switchTab('info')">Atrybuty obiektu</button>
-        <button onclick="switchTab('layers')">Warstwy</button>
-      </div>
-  
-      <div id="tab-table" class="tab-content active"></div>
-      <div id="tab-info" class="tab-content">Kliknij obiekt na mapie, aby wyświetlić szczegóły.</div>
+      <h2 id="tab-active">Atrybuty obiektu</h2>
+      <div id="tab-table" class="tab-content"></div>
+      <div id="tab-info" class="tab-content active">Kliknij obiekt na mapie, aby wyświetlić szczegóły.</div>
       <div id="tab-layers" class="tab-content"></div>
     </div>
   </div>

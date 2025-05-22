@@ -16,9 +16,10 @@ const map = L.map('map').setView([52, 19], 6);
 
     document.getElementById('fileInput').addEventListener('change', handleFile);
 
-    function switchTab(id) {
+    function switchTab(id, title) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
       document.getElementById(`tab-${id}`).classList.add('active');
+      document.getElementById(`tab-active`).textContent = title;
     }
 
     function handleFile(evt) {
@@ -198,8 +199,32 @@ const map = L.map('map').setView([52, 19], 6);
         //const properties = { klasaObiektu: cls }; // <-- dodaj to!
         const properties = Object.assign({ klasaObiektu: cls }, getPropertiesRecursive(feature)); 
         Array.from(feature.children).forEach(el => {
-          if (!el.children.length) properties[el.localName] = el.textContent;
-        });
+            const propName = el.localName;
+            const href = el.getAttribute('xlink:href');
+            const value = href ? { 'xlink:href': href } : (!el.children.length ? el.textContent : null);
+          
+            if (value !== null) {
+                if (properties[propName]) {
+                  if (!Array.isArray(properties[propName])) {
+                    properties[propName] = [properties[propName]];
+                  }
+                  // Dodaj tylko, jeśli nie istnieje już taka sama wartość
+                  const isDuplicate = properties[propName].some(existing =>
+                    typeof existing === 'object' && typeof value === 'object'
+                      ? existing['xlink:href'] === value['xlink:href']
+                      : existing === value
+                  );
+                  if (!isDuplicate) {
+                    properties[propName].push(value);
+                  }
+                } else {
+                  properties[propName] = value;
+                }
+              }
+              
+          });
+          
+          
 
         if (!featuresByClass[cls]) featuresByClass[cls] = [];
         featuresByClass[cls].push({ type: 'Feature', geometry, properties });
@@ -222,7 +247,7 @@ const map = L.map('map').setView([52, 19], 6);
             }
           }).addTo(map);
 
-          if (cls === 'EGB_DzialkaEwidencyjna') {
+          /*if (cls === 'EGB_DzialkaEwidencyjna') {
             features.forEach(feature => {
                 console.log(feature.properties, feature.geometry.coordinates[0])
               if (feature.geometry.type === 'Polygon') {
@@ -244,7 +269,7 @@ const map = L.map('map').setView([52, 19], 6);
                 ).addTo(map);
               }
             });
-          }
+          }*/
           
           
 
@@ -257,25 +282,138 @@ const map = L.map('map').setView([52, 19], 6);
     }
 
     function showFeatureInfo(properties) {
-      const info = document.getElementById('tab-info');
-      info.innerHTML = '<strong>Dane obiektu:</strong><br>' +
-        Object.entries(properties).map(([k, v]) => `<strong>${k}</strong>: ${v}`).join('<br>');
-    }
+        const info = document.getElementById('tab-info');
+        let html = '<strong>Dane obiektu:</strong><br>';
+      
+        for (const [key, value] of Object.entries(properties)) {
+            if (Array.isArray(value)) {
+              html += `<strong>${key}</strong>:<ul>`;
+              value.forEach(item => {
+                if (typeof item === 'object' && item['xlink:href']) {
+                  html += `<li><a href="${item['xlink:href']}" target="_blank" style="text-decoration: underline; color: blue;">${item['xlink:href']}</a></li>`;
+                } else {
+                  html += `<li>${item}</li>`;
+                }
+              });
+              html += '</ul>';
+            } else if (typeof value === 'object' && value !== null && value['xlink:href']) {
+              html += `<strong>${key}</strong>: <a href="${value['xlink:href']}" target="_blank" style="text-decoration: underline; color: blue;">${value['xlink:href']}</a><br>`;
+            } else {
+              html += `<strong>${key}</strong>: ${value}<br>`;
+            }
+          }
+          
+      
+        info.innerHTML = html;
+      }
 
-    function buildDataTable() {
-      const tableDiv = document.getElementById('tab-table');
-      let html = '';
-      Object.entries(featuresByClass).forEach(([cls, features]) => {
-        if (features.length === 0) return;
+      function formatPropertyValue(value) {
+        if (value && typeof value === 'object' && value['xlink:href']) {
+          return `<a href="${value['xlink:href']}" target="_blank" style="text-decoration:underline">${value['xlink:href']}</a>`;
+        }
+        return value ?? '';
+      }
+      
+      function openTablePopup(cls, features) {
+        const popup = window.open('', '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
+        if (!popup) {
+          alert("Popup został zablokowany przez przeglądarkę.");
+          return;
+        }
+      
         const keys = Object.keys(features[0].properties);
-        html += `<h3>${cls}</h3><table><thead><tr>${keys.map(k => `<th>${k}</th>`).join('')}</tr></thead><tbody>`;
+        let html = `
+          <html>
+            <head>
+              <title>${cls}</title>
+              <style>
+                body { font-family: Arial, sans-serif; padding: 10px; }
+                table { border-collapse: collapse; width: 100%; }
+                th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
+                th { background-color: #f4f4f4; }
+              </style>
+            </head>
+            <body>
+              <h2>${cls}</h2>
+              <table>
+                <thead><tr>${keys.map(k => `<th>${k}</th>`).join('')}</tr></thead>
+                <tbody>
+        `;
+      
         features.forEach(f => {
-          html += '<tr>' + keys.map(k => `<td>${f.properties[k] || ''}</td>`).join('') + '</tr>';
+            html += '<tr>' + keys.map(k => {
+                let value = f.properties[k];
+                if (Array.isArray(value)) {
+                  value = [...new Set(value.map(v => formatPropertyValue(v)))].join(', ');
+                } else {
+                  value = formatPropertyValue(value);
+                }
+                return `<td>${value}</td>`;
+              }).join('') + '</tr>';
+              
         });
-        html += '</tbody></table>';
-      });
-      tableDiv.innerHTML = html;
-    }
+      
+        html += `
+                </tbody>
+              </table>
+            </body>
+          </html>
+        `;
+      
+        popup.document.write(html);
+        popup.document.close();
+      }
+      
+
+      function buildDataTable() {
+        const tableDiv = document.getElementById('tab-table');
+        tableDiv.innerHTML = '<h3>Warstwy z atrybutami:</h3>';
+      
+        Object.entries(featuresByClass).forEach(([cls, features]) => {
+          if (features.length === 0) return;
+      
+          const button = document.createElement('button');
+          button.textContent = cls;
+          button.style.marginBottom = '5px';
+          button.padding = '5px';
+          button.addEventListener('click', () => openTablePopup(cls, features));
+          tableDiv.appendChild(button);
+          tableDiv.appendChild(document.createElement('br'));
+        });
+      }
+      
+
+
+
+    function zoomToData() {
+        const bounds = L.latLngBounds();
+        let hasData = false;
+      
+        Object.entries(layerGroups).forEach(([name, group]) => {
+          if (group && group.getLayers) {
+            const layers = group.getLayers();
+            layers.forEach(l => {
+              if (l.getBounds && l.getBounds().isValid()) {
+                bounds.extend(l.getBounds());
+                hasData = true;
+              } else if (l.getLatLng) {
+                bounds.extend(l.getLatLng());
+                hasData = true;
+              }
+            });
+          }
+        });
+      
+        if (hasData && bounds.isValid()) {
+          map.fitBounds(bounds, { padding: [20, 20] });
+        } else {
+          console.warn("Brak danych – bounds:", bounds);
+          alert("Brak danych do wyświetlenia.");
+        }
+      }
+      
+      
+      
 
     function addLayerControl(name, layer) {
       const container = document.getElementById('tab-layers');

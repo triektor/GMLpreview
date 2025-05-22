@@ -1,32 +1,31 @@
 body {
-    font-family: Arial, sans-serif;
+    font-family: 'Inter', sans-serif;
     margin: 0;
     padding: 0;
   }
   
   .main-layout {
     display: flex;
-    height: 90vh;
+    height: 95vh;
   }
   
   #map {
     flex: 3;
     height: 100%;
+    border-radius: 2vh;
+    margin: 1vh;
   }
   
   .side-panel {
     flex: 2;
     padding: 1rem;
     overflow-y: auto;
-    border-left: 1px solid #ccc;
-    background: #f9f9f9;
+    background: #ffffff;
   }
   
   .tabs {
-    margin-bottom: 10px;
-    padding: 4px;
-    border-radius: 8px;
-    border: 2px solid #005e99;
+    margin-bottom: 2px;
+    padding: 2px;
   }
   
   .tabs button {
@@ -41,6 +40,11 @@ body {
   
   .tab-content.active {
     display: block;
+  }
+
+  .tab-content ul{
+    list-style: none;
+    list-style-type: none;
   }
   
   table {
@@ -65,4 +69,29 @@ body {
     pointer-events: none;
   }
   
-  
+  button, input button {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+  }
+
+  @media (max-width: 1200px) {
+    #map {
+        width: 98%;
+        height: 50vh;
+        border-radius: 2vh;
+        margin: 1vh;
+      }
+
+      .main-layout {
+        display: block;
+        height: 95vh;
+      }
+
+      
+      .side-panel {
+        padding: 1rem;
+        width: 98%;
+        height: 50vh;
+        background: #ffffff;
+      }
+  }

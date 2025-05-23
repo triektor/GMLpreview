@@ -3,37 +3,33 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GML Viewer & Exporter</title>
+  <title>GML Preview</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="style.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.8.0/proj4.js"></script>
 </head>
 <body>
-  <h1>GML Viewer & Exporter</h1>
-
-  <div>
-    <div class="tabs">
+  <div id="header">
+    <div class="tabs"></div>
+        <label for="fileInput" class="custom-file-label"> Wczytaj GML </label>
         <input type="file" id="fileInput" accept=".gml" />
-        <button onclick="zoomToData()">Pokaż wszystkie obiekty</button>
-        <button onclick="switchTab('table', 'Tabela')">Tabela</button>
-        <button onclick="switchTab('info', 'Atrybuty obiektu')">Atrybuty obiektu</button>
-        <button onclick="switchTab('layers', 'Warstwy')">Warstwy</button>
+        <button onclick="zoomToData()"  title="Pokaż wszystkie obiekty">🔍</button>
+        <button onclick="clearExistingData()" title="Czyść dane">🗑️</button>
+        <button onclick="switchTab('table', 'Tabela')" title="Tabela danych">📊</button>
+        <button onclick="switchTab('info', 'Atrybuty obiektu')" title="Atrybuty obiektu">ℹ️</button>
+        <button onclick="switchTab('layers', 'Warstwy')" title="Lista warstw">🗂️</button>
     </div>
   </div>
-
   <div class="main-layout">
     <div id="map"></div>
-  
     <div class="side-panel">
-      <h2 id="tab-active">Atrybuty obiektu</h2>
-      <div id="tab-table" class="tab-content"></div>
-      <div id="tab-info" class="tab-content active">Kliknij obiekt na mapie, aby wyświetlić szczegóły.</div>
+      <h2 id="tab-active"></h2>
+      <div id="tab-table" class="tab-content active"></div>
+      <div id="tab-info" class="tab-content">Kliknij obiekt na mapie, aby wyświetlić szczegóły.</div>
       <div id="tab-layers" class="tab-content"></div>
     </div>
   </div>
-  
-
   <script src="app.js"></script>
 </body>
 </html>

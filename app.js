@@ -1,4 +1,40 @@
-const map = L.map('map').setView([52, 19], 6);
+
+    // Podkłady mapowe
+    const baseLayers = {
+        "OpenStreetMap": L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom: 19,
+          attribution: "© OpenStreetMap"
+        }),
+        "Ortofotomapa-Geoportal": L.tileLayer.wms("https://mapy.geoportal.gov.pl/wss/service/PZGIK/ORTO/WMS/StandardResolution", {
+          layers: "Raster",
+          format: "image/png",
+          transparent: true,
+          attribution: "© Geoportal",
+          version: "1.3.0"
+        }),
+        "KIEG": L.tileLayer.wms("https://integracja.gugik.gov.pl/cgi-bin/KrajowaIntegracjaEwidencjiGruntow", {
+          layers: "działki,numery_dzialek,budynki",
+          format: "image/png",
+          transparent: true,
+          attribution: "© Geoportal",
+          version: "1.3.0"
+        }),
+        "Ciemny": L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+          attribution: "© CartoDB",
+          subdomains: "abcd",
+          maxZoom: 19
+        }),
+        "Brak": L.tileLayer("", {
+            attribution: "",
+            subdomains: "abcd",
+            maxZoom: 19
+          })
+      };
+      
+
+
+      
+const map = L.map('map').setView([52, 19], 7);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
@@ -11,6 +47,10 @@ const map = L.map('map').setView([52, 19], 6);
       'EPSG:2178': '+proj=tmerc +lat_0=0 +lon_0=21 +k=0.999923 +x_0=7500000 +y_0=0 +ellps=GRS80 +units=m +no_defs',
       'EPSG:2179': '+proj=tmerc +lat_0=0 +lon_0=24 +k=0.999923 +x_0=8500000 +y_0=0 +ellps=GRS80 +units=m +no_defs'
     };
+
+    // Dodaj domyślny podkład do mapy
+    baseLayers["OpenStreetMap"].addTo(map);
+    L.control.layers(baseLayers, null, { position: 'topright', collapsed: true }).addTo(map);
 
     Object.entries(epsgDefs).forEach(([code, def]) => proj4.defs(code, def));
 
@@ -37,6 +77,7 @@ const map = L.map('map').setView([52, 19], 6);
       return proj4.defs(code) ? proj4(code, 'EPSG:4326', [y, x]) : [x, y];
     }
 
+    // Style
     function styleFeature(feature) {
 
         //console.log('klasaObiektu:', feature.properties.klasaObiektu);
@@ -120,9 +161,17 @@ const map = L.map('map').setView([52, 19], 6);
               fillOpacity: 0.8,
               weight: 1
             };
+        case 'KR_ObiektKarto':
+                return {
+                  color: '#cf382c',  // ciemny czerwony
+                  radius: 5,
+                  fillColor: '#000000',
+                  fillOpacity: 0.8,
+                  weight: 1
+            };
           default:
             return {
-              color: '#7704c5',
+              color: '#cf382c',
               weight: 1,
               fillOpacity: 0.3
             };
@@ -161,10 +210,7 @@ const map = L.map('map').setView([52, 19], 6);
         return properties;
       }
       
-      
-      
-      
-
+    // Wczytywanie danych GML 
     function parseGML(xml) {
       const members = xml.getElementsByTagNameNS('*', 'featureMember');
       Array.from(members).forEach(member => {
@@ -244,8 +290,24 @@ const map = L.map('map').setView([52, 19], 6);
                 },
             onEachFeature: (feature, layer) => {
               layer.on('click', () => showFeatureInfo(feature.properties));
+              
+                
+              if (cls === 'EGB_DzialkaEwidencyjna') 
+              {
+                const fullNumer = feature.properties.idDzialki || 'brak';
+                //const numer = fullNumer.split('.').at(-1);
+                const numer = fullNumer;
+                layer.bindTooltip(`${numer}`, {
+                permanent: false,      // na stałe
+                direction: "center",  // na środku
+                className: "polygon-tooltip"
+              }
+              ).openTooltip();}
             }
           }).addTo(map);
+
+
+          
 
           /*if (cls === 'EGB_DzialkaEwidencyjna') {
             features.forEach(feature => {
@@ -281,6 +343,7 @@ const map = L.map('map').setView([52, 19], 6);
       buildDataTable();
     }
 
+    // Podgląd atrybutów
     function showFeatureInfo(properties) {
         const info = document.getElementById('tab-info');
         let html = '<strong>Dane obiektu:</strong><br>';
@@ -302,19 +365,20 @@ const map = L.map('map').setView([52, 19], 6);
               html += `<strong>${key}</strong>: ${value}<br>`;
             }
           }
-          
-      
         info.innerHTML = html;
       }
-
-      function formatPropertyValue(value) {
+    
+    // Formatowanie wartości w tabeli
+    function formatPropertyValue(value) {
         if (value && typeof value === 'object' && value['xlink:href']) {
           return `<a href="${value['xlink:href']}" target="_blank" style="text-decoration:underline">${value['xlink:href']}</a>`;
         }
         return value ?? '';
       }
       
-      function openTablePopup(cls, features) {
+    // Pop up z tabelą
+    // TODO do dodania zapis do xls, json itp.
+    function openTablePopup(cls, features) {
         const popup = window.open('', '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
         if (!popup) {
           alert("Popup został zablokowany przez przeglądarkę.");
@@ -363,27 +427,22 @@ const map = L.map('map').setView([52, 19], 6);
         popup.document.write(html);
         popup.document.close();
       }
-      
 
-      function buildDataTable() {
+    function buildDataTable() {
         const tableDiv = document.getElementById('tab-table');
         tableDiv.innerHTML = '<h3>Warstwy z atrybutami:</h3>';
       
         Object.entries(featuresByClass).forEach(([cls, features]) => {
           if (features.length === 0) return;
-      
           const button = document.createElement('button');
           button.textContent = cls;
-          button.style.marginBottom = '5px';
-          button.padding = '5px';
+          button.style.margin = '4px';
+          button.style.padding = '10px';
           button.addEventListener('click', () => openTablePopup(cls, features));
           tableDiv.appendChild(button);
           tableDiv.appendChild(document.createElement('br'));
         });
       }
-      
-
-
 
     function zoomToData() {
         const bounds = L.latLngBounds();
@@ -412,16 +471,14 @@ const map = L.map('map').setView([52, 19], 6);
         }
       }
       
-      
-      
-
     function addLayerControl(name, layer) {
       const container = document.getElementById('tab-layers');
       const id = `layer-${name}`;
       const checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
       checkbox.id = id;
-      checkbox.checked = true;
+      checkbox.checked = false; // Ustawiama domyśnie nie wczytane warstwy
+      map.removeLayer(layer);
       checkbox.addEventListener('change', () => {
         if (checkbox.checked) {
           map.addLayer(layer);
@@ -436,3 +493,20 @@ const map = L.map('map').setView([52, 19], 6);
       container.appendChild(label);
       container.appendChild(document.createElement('br'));
     }
+
+    function clearExistingData() {
+        // Remove existing layers
+        Object.values(layerGroups).forEach(layer => {
+          map.removeLayer(layer);
+        });
+        
+        // Clear data structures
+        Object.keys(layerGroups).forEach(key => delete layerGroups[key]);
+        Object.keys(featuresByClass).forEach(key => delete featuresByClass[key]);
+        
+        // Clear UI
+        document.getElementById('tab-layers').innerHTML = '';
+        document.getElementById('tab-table').innerHTML = '';
+      }
+
+      

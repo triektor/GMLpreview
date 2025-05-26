@@ -10,18 +10,19 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.8.0/proj4.js"></script>
 </head>
 <body>
-  <div id="header">
-    <div class="tabs"></div>
-        <label for="fileInput" class="custom-file-label"> Wczytaj GML </label>
-        <input type="file" id="fileInput" accept=".gml" />
-        <button onclick="zoomToData()"  title="Pokaż wszystkie obiekty">🔍</button>
-        <button onclick="clearExistingData()" title="Czyść dane">🗑️</button>
-        <button onclick="switchTab('table', 'Tabela')" title="Tabela danych">📊</button>
-        <button onclick="switchTab('info', 'Atrybuty obiektu')" title="Atrybuty obiektu">ℹ️</button>
-        <button onclick="switchTab('layers', 'Warstwy')" title="Lista warstw">🗂️</button>
-    </div>
-  </div>
+
   <div class="main-layout">
+    <div class="header">
+        <div class="tabs">
+            <label for="fileInput" class="custom-file-label"> Wczytaj GML </label>
+            <input type="file" id="fileInput" accept=".gml" />
+            <button onclick="zoomToData()"  title="Pokaż wszystkie obiekty">🔍</button>
+            <button onclick="clearExistingData()" title="Czyść dane">🗑️</button>
+            <button onclick="switchTab('table', 'Tabela')" title="Tabela danych">📊</button>
+            <button onclick="switchTab('info', 'Atrybuty obiektu')" title="Atrybuty obiektu">ℹ️</button>
+            <button onclick="switchTab('layers', 'Warstwy')" title="Lista warstw">🗂️</button>
+        </div>
+      </div>
     <div id="map"></div>
     <div class="side-panel">
       <h2 id="tab-active"></h2>

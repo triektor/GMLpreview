@@ -209,11 +209,47 @@ const map = L.map('map').setView([52, 19], 7);
         });
         return properties;
       }
+
+      /*function addAttributeRowWithoutGeometry(attributes) {
+        const table = document.getElementById("tab-table");
+      
+        const wrapper = document.createElement("div");
+        wrapper.className = "attribute-entry";
+      
+        Object.entries(attributes).forEach(([key, value]) => {
+          const row = document.createElement("div");
+          row.innerHTML = `<strong>${key}:</strong> ${value}`;
+          wrapper.appendChild(row);
+        });
+      
+        wrapper.style.borderBottom = "1px solid #ccc";
+        wrapper.style.marginBottom = "0.5em";
+        wrapper.style.paddingBottom = "0.5em";
+      
+        table.appendChild(wrapper);
+      }
+      */
+
+      function createTextLabel(feature, latlng) {
+        const text = feature.properties.tekst || '-';
+        const rotation = feature.properties.katObrotu || 0;
+      
+        const icon = L.divIcon({
+          className: 'rotated-label',
+          html: `<div style="transform: rotate(${rotation}deg);color: #000000; transform-origin: center; white-space: nowrap;">${text}</div>`,
+          iconSize: null // rozmiar dopasowuje się do treści
+        });
+      
+        return L.marker(latlng, { icon: icon, interactive: false });
+      }
+      
+      
       
     // Wczytywanie danych GML 
     function parseGML(xml) {
       const members = xml.getElementsByTagNameNS('*', 'featureMember');
       Array.from(members).forEach(member => {
+        try {
         const feature = member.firstElementChild;
         const cls = feature.localName;
         const geom = feature.querySelector('Point, LineString, Polygon');
@@ -240,6 +276,8 @@ const map = L.map('map').setView([52, 19], 7);
             coordinates.push(transformCoords(posList[i], posList[i + 1], srsName));
           }
           geometry = { type: 'Polygon', coordinates: [coordinates] };
+        } else {
+            //addAttributeRowWithoutGeometry(attributes);
         }
 
         //const properties = { klasaObiektu: cls }; // <-- dodaj to!
@@ -274,19 +312,30 @@ const map = L.map('map').setView([52, 19], 7);
 
         if (!featuresByClass[cls]) featuresByClass[cls] = [];
         featuresByClass[cls].push({ type: 'Feature', geometry, properties });
-      });
+      } catch(err){}
+    });
 
       Object.entries(featuresByClass).forEach(([cls, features]) => {
+        try {
         const layer = L.geoJSON({ type: 'FeatureCollection', features }, {
             style: styleFeature,
             pointToLayer: (feature, latlng) => {
-                  return L.circleMarker(latlng, {
-                    radius: 0.1,
-                    color: '#000000',
-                    fillColor: '#000000',
-                    fillOpacity: 1,
-                    weight: 0.1
-                  })
+                if (cls === 'KR_ObiektKarto' || cls === 'PrezentacjaGraficzna'){
+                    try {
+                        return createTextLabel(feature, latlng);
+                      }
+                      catch(err) {
+                      }
+                    
+                } else {
+                    return L.circleMarker(latlng, {
+                        radius: 0.1,
+                        color: '#000000',
+                        fillColor: '#000000',
+                        fillOpacity: 1,
+                        weight: 0.1
+                      })
+                }
                 },
             onEachFeature: (feature, layer) => {
               layer.on('click', () => showFeatureInfo(feature.properties));
@@ -294,7 +343,7 @@ const map = L.map('map').setView([52, 19], 7);
                 
               if (cls === 'EGB_DzialkaEwidencyjna') 
               {
-                const fullNumer = feature.properties.idDzialki || 'brak';
+                /*const fullNumer = feature.properties.idDzialki || 'brak';
                 //const numer = fullNumer.split('.').at(-1);
                 const numer = fullNumer;
                 layer.bindTooltip(`${numer}`, {
@@ -302,9 +351,11 @@ const map = L.map('map').setView([52, 19], 7);
                 direction: "center",  // na środku
                 className: "polygon-tooltip"
               }
-              ).openTooltip();}
+              ).openTooltip();
+            */}
             }
           }).addTo(map);
+        
 
 
           
@@ -337,6 +388,10 @@ const map = L.map('map').setView([52, 19], 7);
 
         layerGroups[cls] = layer;
         addLayerControl(cls, layer);
+    } catch(err)
+    {
+
+    }
       });
 
       switchTab('table');
@@ -393,7 +448,7 @@ const map = L.map('map').setView([52, 19], 7);
               <style>
                 body { font-family: Arial, sans-serif; padding: 10px; }
                 table { border-collapse: collapse; width: 100%; }
-                th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
+                th, td { border: 1px solid #ccc; padding: 6px; text-align: left; vertical-align: top; }
                 th { background-color: #f4f4f4; }
               </style>
             </head>
@@ -509,4 +564,40 @@ const map = L.map('map').setView([52, 19], 7);
         document.getElementById('tab-table').innerHTML = '';
       }
 
-      
+const minZoomViz = 16;
+
+// Funkcja kontrolująca widoczność
+function updateObiektKartoVisibility() {
+
+  try{
+    if('KR_ObiektKarto' in layerGroups) {
+  if (map.getZoom() >= minZoomViz) {
+    if (!map.hasLayer( layerGroups['KR_ObiektKarto'])) {
+      map.addLayer(layerGroups['KR_ObiektKarto']);
+    }
+  } else {
+    if (map.hasLayer(layerGroups['KR_ObiektKarto'])) {
+      map.removeLayer(layerGroups['KR_ObiektKarto']);
+    }
+  }
+}
+} catch {}
+
+try{
+    if('PrezentacjaGraficzna' in layerGroups) {
+    if (map.getZoom() >= minZoomViz) {
+      if (!map.hasLayer(layerGroups['PrezentacjaGraficzna'])) {
+        map.addLayer(layerGroups['PrezentacjaGraficzna']);
+      }
+    } else {
+      if (map.hasLayer(layerGroups['PrezentacjaGraficzna'])) {
+        map.removeLayer(layerGroups['PrezentacjaGraficzna']);
+      }
+    }
+}
+  } catch {}
+}
+
+// Wywołaj przy starcie i przy każdej zmianie zoomu
+map.on('zoomend', updateObiektKartoVisibility);
+//updateObiektKartoVisibility();

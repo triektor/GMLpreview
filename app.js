@@ -12,12 +12,13 @@
           attribution: "© Geoportal",
           version: "1.3.0"
         }),
-        "KIEG": L.tileLayer.wms("https://integracja.gugik.gov.pl/cgi-bin/KrajowaIntegracjaEwidencjiGruntow", {
-          layers: "działki,numery_dzialek,budynki",
+        "KIEG": L.tileLayer.wms("https://integracja02.gugik.gov.pl/cgi-bin/KrajowaIntegracjaEwidencjiGruntow", {
+          layers: "dzialki,numery_dzialek,budynki",
           format: "image/png",
           transparent: true,
           attribution: "© Geoportal",
-          version: "1.3.0"
+          version: "1.3.0",
+          maxZoom:25
         }),
         "Ciemny": L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
           attribution: "© CartoDB",

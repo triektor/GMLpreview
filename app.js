@@ -12,12 +12,19 @@
           attribution: "© Geoportal",
           version: "1.3.0"
         }),
-        "KIEG": L.tileLayer.wms("https://integracja.gugik.gov.pl/cgi-bin/KrajowaIntegracjaEwidencjiGruntow", {
-          layers: "działki,numery_dzialek,budynki",
+        "KIEG": L.tileLayer.wms("https://integracja02.gugik.gov.pl/cgi-bin/KrajowaIntegracjaEwidencjiGruntow", {
+          layers: "dzialki,numery_dzialek,budynki",
           format: "image/png",
           transparent: true,
+          maxZoom:25,
           attribution: "© Geoportal",
           version: "1.3.0"
+        }),
+        "KIUT": L.tileLayer.wms("https://integracja.gugik.gov.pl/cgi-bin/KrajowaIntegracjaUzbrojeniaTerenu", {
+          layers: "przewod_urzadzenia,przewod_telekomunikacyjny",
+          format: 'image/png',
+          transparent: true,
+          maxZoom:25
         }),
         "Ciemny": L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
           attribution: "© CartoDB",
@@ -31,8 +38,6 @@
           })
       };
       
-
-
       
 const map = L.map('map').setView([52, 19], 7);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {

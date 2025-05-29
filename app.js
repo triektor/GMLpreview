@@ -10,15 +10,24 @@
           format: "image/png",
           transparent: true,
           attribution: "© Geoportal",
-          version: "1.3.0"
+          version: "1.3.0",
+          maxZoom:25
         }),
-        "KIEG": L.tileLayer.wms("https://integracja.gugik.gov.pl/cgi-bin/KrajowaIntegracjaEwidencjiGruntow", {
-          layers: "działki,numery_dzialek,budynki",
+        "KIEG": L.tileLayer.wms("https://integracja02.gugik.gov.pl/cgi-bin/KrajowaIntegracjaEwidencjiGruntow", {
+          layers: "dzialki,numery_dzialek,budynki",
           format: "image/png",
           transparent: true,
           attribution: "© Geoportal",
-          version: "1.3.0"
+          version: "1.3.0",
+          maxZoom:25
         }),
+        "KIUT": L.tileLayer.wms("https://integracja.gugik.gov.pl/cgi-bin/KrajowaIntegracjaUzbrojeniaTerenu", {
+            layers: "przewod_urzadzenia,przewod_telekomunikacyjny",
+            format: 'image/png',
+            transparent: true,
+            attribution: "© Geoportal",
+            maxZoom:25
+          }),
         "Ciemny": L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
           attribution: "© CartoDB",
           subdomains: "abcd",
@@ -31,15 +40,13 @@
           })
       };
       
-
-
-      
 const map = L.map('map').setView([52, 19], 7);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
     const layerGroups = {};
+    const innerLayers = {};
     const featuresByClass = {};
     const epsgDefs = {
       'EPSG:2176': '+proj=tmerc +lat_0=0 +lon_0=15 +k=0.999923 +x_0=5500000 +y_0=0 +ellps=GRS80 +units=m +no_defs',
@@ -315,7 +322,7 @@ const map = L.map('map').setView([52, 19], 7);
       } catch(err){}
     });
 
-    const innerLayers = {};
+    
 
       Object.entries(featuresByClass).forEach(([cls, features]) => {
         try {
@@ -580,9 +587,11 @@ const minZoomViz = 16;
 // Funkcja kontrolująca widoczność
 function updateObiektKartoVisibility() {
 
-    /*if (!map.hasLayer(innerLayers['EGDE'])){
+    /*try{
+    if (!map.hasLayer(innerLayers['EGDE'])){
         map.addLayer(innerLayers['EGDE'])
-    }*/
+    }   
+    } catch {}*/
     
 
   try{

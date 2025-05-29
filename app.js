@@ -315,6 +315,8 @@ const map = L.map('map').setView([52, 19], 7);
       } catch(err){}
     });
 
+    const innerLayers = {};
+
       Object.entries(featuresByClass).forEach(([cls, features]) => {
         try {
         const layer = L.geoJSON({ type: 'FeatureCollection', features }, {
@@ -322,7 +324,16 @@ const map = L.map('map').setView([52, 19], 7);
             pointToLayer: (feature, latlng) => {
                 if (cls === 'KR_ObiektKarto' || cls === 'PrezentacjaGraficzna'){
                     try {
-                        return createTextLabel(feature, latlng);
+                        
+                        const myMarker = createTextLabel(feature, latlng);
+
+                        /*const kodObiektu = feature.kodObiektu || 'none'
+                        if (!innerLayers[kodObiektu]) {
+                            innerLayers[kodObiektu] = L.layerGroup();
+                            //warstwaKR_ObiektKarto.addLayer(podwarstwyKR[kodObiektu]);
+                          }
+                          innerLayers[kodObiektu].addLayer(myMarker);*/
+                          return myMarker
                       }
                       catch(err) {
                       }
@@ -568,6 +579,11 @@ const minZoomViz = 16;
 
 // Funkcja kontrolująca widoczność
 function updateObiektKartoVisibility() {
+
+    /*if (!map.hasLayer(innerLayers['EGDE'])){
+        map.addLayer(innerLayers['EGDE'])
+    }*/
+    
 
   try{
     if('KR_ObiektKarto' in layerGroups) {

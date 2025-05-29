@@ -459,7 +459,7 @@ const map = L.map('map').setView([52, 19], 7);
               <style>
                 body { font-family: Arial, sans-serif; padding: 10px; }
                 table { border-collapse: collapse; width: 100%; }
-                th, td { border: 1px solid #ccc; padding: 6px; text-align: left; vertical-align: top; }
+                th, td { border: 1px solid #ccc; padding: 1px; text-align: left; vertical-align: top; }
                 th { background-color: #f4f4f4; }
               </style>
             </head>

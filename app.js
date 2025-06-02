@@ -41,9 +41,21 @@
       };
       
 const map = L.map('map').setView([52, 19], 7);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+
+function showLoading() {
+    document.getElementById("loadingOverlay").classList.add("show");
+  }
+  
+  function hideLoading() {
+    document.getElementById("loadingOverlay").classList.remove("show");
+  }
+
+  //hideLoading();
+  
+
+/*L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
+    }).addTo(map);*/
 
     const layerGroups = {};
     const innerLayers = {};
@@ -254,6 +266,8 @@ const map = L.map('map').setView([52, 19], 7);
       
     // Wczytywanie danych GML 
     function parseGML(xml) {
+        showLoading();
+
       const members = xml.getElementsByTagNameNS('*', 'featureMember');
       Array.from(members).forEach(member => {
         try {
@@ -409,6 +423,9 @@ const map = L.map('map').setView([52, 19], 7);
     } catch(err)
     {
 
+    }
+    finally {
+        hideLoading();
     }
       });
 

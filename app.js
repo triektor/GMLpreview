@@ -22,7 +22,7 @@
           maxZoom:25
         }),
         "KIUT": L.tileLayer.wms("https://integracja.gugik.gov.pl/cgi-bin/KrajowaIntegracjaUzbrojeniaTerenu", {
-            layers: "przewod_urzadzenia,przewod_niezidentyfikowany,przewod_specjalny,przewod_telekomunikacyjny,przewod_cieplowniczyprzewod_gazowy,przewod_elektroenergetyczny,przewod_kanalizacyjny,przewod_wodociagowy,",
+            layers: "przewod_urzadzenia,przewod_niezidentyfikowany,przewod_specjalny,przewod_telekomunikacyjny,przewod_cieplowniczy,przewod_gazowy,przewod_elektroenergetyczny,przewod_kanalizacyjny,przewod_wodociagowy",
             format: 'image/png',
             transparent: true,
             attribution: "© Geoportal",

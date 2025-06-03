@@ -40,23 +40,7 @@
           })
       };
       
-const map = L.map('map').setView([52, 19], 7);
-
-function showLoading() {
-    document.getElementById("loadingOverlay").classList.add("show");
-  }
-  
-  function hideLoading() {
-    document.getElementById("loadingOverlay").classList.remove("show");
-  }
-
-  //hideLoading();
-  
-
-/*L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);*/
-
+    const map = L.map('map').setView([52, 19], 7);
     const layerGroups = {};
     const innerLayers = {};
     const featuresByClass = {};
@@ -84,6 +68,7 @@ function showLoading() {
     function handleFile(evt) {
       const file = evt.target.files[0];
       const reader = new FileReader();
+      switchTab('load');
       reader.onload = function(e) {
         const xml = new DOMParser().parseFromString(e.target.result, 'application/xml');
         parseGML(xml);
@@ -266,7 +251,9 @@ function showLoading() {
       
     // Wczytywanie danych GML 
     function parseGML(xml) {
-        showLoading();
+
+        
+        
 
       const members = xml.getElementsByTagNameNS('*', 'featureMember');
       Array.from(members).forEach(member => {
@@ -347,14 +334,7 @@ function showLoading() {
                     try {
                         
                         const myMarker = createTextLabel(feature, latlng);
-
-                        /*const kodObiektu = feature.kodObiektu || 'none'
-                        if (!innerLayers[kodObiektu]) {
-                            innerLayers[kodObiektu] = L.layerGroup();
-                            //warstwaKR_ObiektKarto.addLayer(podwarstwyKR[kodObiektu]);
-                          }
-                          innerLayers[kodObiektu].addLayer(myMarker);*/
-                          return myMarker
+                        return myMarker
                       }
                       catch(err) {
                       }
@@ -373,25 +353,11 @@ function showLoading() {
               layer.on('click', () => showFeatureInfo(feature.properties));
               
                 
-              if (cls === 'EGB_DzialkaEwidencyjna') 
-              {
-                /*const fullNumer = feature.properties.idDzialki || 'brak';
-                //const numer = fullNumer.split('.').at(-1);
-                const numer = fullNumer;
-                layer.bindTooltip(`${numer}`, {
-                permanent: false,      // na stałe
-                direction: "center",  // na środku
-                className: "polygon-tooltip"
-              }
-              ).openTooltip();
-            */}
+
             }
           }).addTo(map);
         
-
-
           
-
           /*if (cls === 'EGB_DzialkaEwidencyjna') {
             features.forEach(feature => {
                 console.log(feature.properties, feature.geometry.coordinates[0])
@@ -425,11 +391,36 @@ function showLoading() {
 
     }
     finally {
-        hideLoading();
+        
     }
+
+    /*try {
+        
+
+        if (cls === 'KR_ObiektKarto' || cls === 'PrezentacjaGraficzna')
+        {
+
+          features.forEach(feature => {
+            console.log(feature.properties, feature.geometry.coordinates[0])//, feature.kodObiektu.at(1))
+              const myMarker2 = createTextLabel(feature, latlng);
+              console.log(feature.properties, feature.kodObiektu)
+              const kodObiektu = feature.kodObiektu[0] || 'none'
+
+              if (!innerLayers[kodObiektu]) {
+                  innerLayers[kodObiektu] = L.layerGroup();
+                  //warstwaKR_ObiektKarto.addLayer(podwarstwyKR[kodObiektu]);
+              }
+              innerLayers[kodObiektu].addLayer(myMarker2);         
+      
+          }
+          );
+      }
+    } catch {}*/
+
       });
 
-      switchTab('table');
+      //switchTab('table');
+      switchTab('layers');
       buildDataTable();
     }
 
@@ -605,7 +596,7 @@ const minZoomViz = 16;
 function updateObiektKartoVisibility() {
 
     /*try{
-    if (!map.hasLayer(innerLayers['EGDE'])){
+    if (!map.hasLayer(innerLayers['EGDE'])){//} && ((map.getZoom() >= minZoomViz))){
         map.addLayer(innerLayers['EGDE'])
     }   
     } catch {}*/
@@ -638,6 +629,7 @@ try{
     }
 }
   } catch {}
+  
 }
 
 // Wywołaj przy starcie i przy każdej zmianie zoomu

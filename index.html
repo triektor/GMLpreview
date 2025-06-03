@@ -4,16 +4,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GML Preview</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icons/icon-192.png" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="style.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.8.0/proj4.js"></script>
 </head>
 <body>
-    <div id="loadingOverlay">
-        <div class="loadingContent">Wczytywanie danych…</div>
-      </div>      
-  <div class="main-layout">
+    <button id="installBtn" style="display: none;">Zainstaluj aplikację</button>
+  <div class="main-layout"> 
     <div class="header">
         <div class="tabs">
             <label for="fileInput" class="custom-file-label"> Wczytaj GML </label>
@@ -31,8 +31,40 @@
       <div id="tab-table" class="tab-content active"></div>
       <div id="tab-info" class="tab-content">Kliknij obiekt na mapie, aby wyświetlić szczegóły.</div>
       <div id="tab-layers" class="tab-content"></div>
+      <div id="tab-load" class="tab-content">Wczytywanie plików.<br>Proszę czekać.</div>
     </div>
   </div>
   <script src="app.js"></script>
+  <script>
+    let deferredPrompt;
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      const btn = document.getElementById('installBtn');
+      btn.style.display = 'block';
+
+      btn.addEventListener('click', () => {
+        btn.style.display = 'none';
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+          if (choiceResult.outcome === 'accepted') {
+            console.log('Użytkownik zaakceptował instalację');
+          } else {
+            console.log('Użytkownik anulował instalację');
+          }
+          deferredPrompt = null;
+        });
+      });
+    });
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+          .then(reg => console.log('Service Worker zarejestrowany:', reg))
+          .catch(err => console.log('Błąd rejestracji SW:', err));
+      });
+    }
+  </script>
 </body>
 </html>

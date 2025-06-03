@@ -1,5 +1,7 @@
 # [GMLpreview](https://rzezimioszek.github.io/GMLpreview/)
 ---
+[![banner](https://github.com/user-attachments/assets/30ea3a4e-33e1-47b6-9d06-e0c99d11c7ed)](https://rzezimioszek.github.io/GMLpreview/)
+---
 ## Informacje o projekcie
 ### O użytkowaniu
 - Projekt realizowany w celach testowych.
@@ -8,6 +10,7 @@
 - Chcesz mieć pewność, że dane wrażliwe są odpowiednio chronione to uruchamiaj skrypt wyłącznie lokalnie w bezpiecznym środowisku.
 ### O działaniu
 - program radzi sobie z plikami do ok. 300mb
+
 
 ## Postawione cele do realizacji
 - [?] Wczytywanie jakotako danych EGiB

@@ -13,6 +13,14 @@
           version: "1.3.0",
           maxZoom:25
         }),
+        "Ortofotomapa-Geoportal-HighRes": L.tileLayer.wms("https://mapy.geoportal.gov.pl/wss/service/PZGIK/ORTO/WMS/HighResolution", {
+            layers: "Raster",
+            format: "image/png",
+            transparent: true,
+            attribution: "© Geoportal",
+            version: "1.3.0",
+            maxZoom:25
+          }),
         "KIEG": L.tileLayer.wms("https://integracja02.gugik.gov.pl/cgi-bin/KrajowaIntegracjaEwidencjiGruntow", {
           layers: "dzialki,numery_dzialek,budynki",
           format: "image/png",
@@ -28,6 +36,13 @@
             attribution: "© Geoportal",
             maxZoom:25
           }),
+        "KIBDOT": L.tileLayer.wms("https://integracja.gugik.gov.pl/cgi-bin/KrajowaIntegracjaBazDanychObiektowTopograficznych", {
+            layers: "bdot",
+            format: 'image/png',
+            transparent: true,
+            attribution: "© Geoportal",
+            maxZoom:25
+        }),
         "Ciemny": L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
           attribution: "© CartoDB",
           subdomains: "abcd",
@@ -54,6 +69,21 @@
     // Dodaj domyślny podkład do mapy
     baseLayers["OpenStreetMap"].addTo(map);
     L.control.layers(baseLayers, null, { position: 'topright', collapsed: true }).addTo(map);
+
+    const defaultStyle = {
+        color: "#3388ff",
+        weight: 2,
+        opacity: 1,
+        fillOpacity: 0.2
+      };
+      
+      const highlightStyle = {
+        color: "#ffcc00",
+        fillColor: "#ffcc00",
+        weight: 4,
+        opacity: 1,
+        fillOpacity: 0.5
+      };
 
     Object.entries(epsgDefs).forEach(([code, def]) => proj4.defs(code, def));
 
@@ -247,8 +277,6 @@
         return L.marker(latlng, { icon: icon, interactive: false });
       }
       
-      
-      
     // Wczytywanie danych GML 
     function parseGML(xml) {
 
@@ -351,6 +379,7 @@
                 },
             onEachFeature: (feature, layer) => {
               layer.on('click', () => showFeatureInfo(feature.properties));
+              onEachFeature(feature, layer);
               
                 
 
@@ -394,33 +423,57 @@
         
     }
 
-    /*try {
+    try {
         
 
         if (cls === 'KR_ObiektKarto' || cls === 'PrezentacjaGraficzna')
         {
 
           features.forEach(feature => {
-            console.log(feature.properties, feature.geometry.coordinates[0])//, feature.kodObiektu.at(1))
-              const myMarker2 = createTextLabel(feature, latlng);
-              console.log(feature.properties, feature.kodObiektu)
-              const kodObiektu = feature.kodObiektu[0] || 'none'
+            console.log(feature.properties);
+            const coords = feature.properties.pos.split(' ').map(Number);
+            //console.log('coords', coords, srsName);
+            
+            let epsg = '2178';
+
+                switch(String(coords[1]).charAt(0)) {
+                    case '6':
+                      epsg = '2177';
+                      break;
+                    case '5':
+                      epsg = '2176';
+                      break;
+                    case '8':
+                      epsg = '2179';
+                      break;
+                    default:
+                      epsg = '2178';
+                  } 
+            console.log(String(coords[1]).charAt(0));
+
+            const [x, y] = transformCoords(coords[0], coords[1], `EPSG::${epsg}`);
+            console.log('x, y',x, y);
+
+              const myMarker2 = createTextLabel(feature, [y, x]);
+              console.log('marker load: ', feature.properties.kodObiektu)
+              const kodObiektu = feature.properties.kodObiektu[0] || 'none'
 
               if (!innerLayers[kodObiektu]) {
                   innerLayers[kodObiektu] = L.layerGroup();
                   //warstwaKR_ObiektKarto.addLayer(podwarstwyKR[kodObiektu]);
               }
-              innerLayers[kodObiektu].addLayer(myMarker2);         
+              innerLayers[kodObiektu].addLayer(myMarker2);   
+              console.log(`Obiekty wczytwane dla kodu:${kodObiektu}`);      
       
           }
           );
       }
-    } catch {}*/
+    } catch {}
 
       });
 
       //switchTab('table');
-      switchTab('layers');
+      switchTab('layers', 'Warstwy');
       buildDataTable();
     }
 
@@ -447,6 +500,8 @@
             }
           }
         info.innerHTML = html;
+
+        switchTab('info', 'Atrybuty obiektu');
       }
     
     // Formatowanie wartości w tabeli
@@ -590,18 +645,34 @@
         document.getElementById('tab-table').innerHTML = '';
       }
 
-const minZoomViz = 16;
+      function onEachFeature(feature, layer) {
+        layer.on({
+          mouseover: (e) => {
+            e.target.setStyle(highlightStyle);
+            e.target.bringToFront(); // opcjonalnie: na wierzch
+          },
+          mouseout: (e) => {
+            e.target.setStyle(styleFeature(feature));
+            //layer.resetStyle(e.target);
+            //e.target.resetStyle() // przywróć styl domyślny
+          }
+        });
+      }
+
+const minZoomViz = 14;
 
 // Funkcja kontrolująca widoczność
 function updateObiektKartoVisibility() {
 
-    /*try{
-    if (!map.hasLayer(innerLayers['EGDE'])){//} && ((map.getZoom() >= minZoomViz))){
+    try{
+    if (!map.hasLayer(innerLayers['EGDE']) && ((map.getZoom() >= minZoomViz)) && map.hasLayer( layerGroups['EGB_DzialkaEwidencyjna'])){
         map.addLayer(innerLayers['EGDE'])
-    }   
-    } catch {}*/
+    } else {
+        map.removeLayer(innerLayers['EGDE']); 
+    }  
+    } catch {}
     
-
+  /*
   try{
     if('KR_ObiektKarto' in layerGroups) {
   if (map.getZoom() >= minZoomViz) {
@@ -628,7 +699,7 @@ try{
       }
     }
 }
-  } catch {}
+  } catch {}*/
   
 }
 

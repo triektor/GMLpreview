@@ -12,7 +12,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.8.0/proj4.js"></script>
 </head>
 <body>
-    <button id="installBtn" style="display: none;">Zainstaluj aplikację</button>
+    
   <div class="main-layout"> 
     <div class="header">
         <div class="tabs">
@@ -23,6 +23,7 @@
             <button onclick="switchTab('table', 'Tabela')" title="Tabela danych">📊</button>
             <button onclick="switchTab('info', 'Atrybuty obiektu')" title="Atrybuty obiektu">ℹ️</button>
             <button onclick="switchTab('layers', 'Warstwy')" title="Lista warstw">🗂️</button>
+            <button id="installBtn" style="display: none; background-color: crimson;">Zainstaluj</button>
         </div>
       </div>
     <div id="map"></div>
@@ -42,7 +43,7 @@
       e.preventDefault();
       deferredPrompt = e;
       const btn = document.getElementById('installBtn');
-      btn.style.display = 'block';
+      btn.style.display = 'inline';
 
       btn.addEventListener('click', () => {
         btn.style.display = 'none';

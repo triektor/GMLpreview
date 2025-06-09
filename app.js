@@ -203,6 +203,103 @@
                   fillOpacity: 0.8,
                   weight: 1
             };
+            // GESUT
+        case 'GES_PrzewodWodociagowy':
+                return {
+                  color: '#0000ff',  
+                  radius: 5,
+                  fillColor: '#0000ff',
+                  fillOpacity: 0.8,
+                  weight: 1
+            };
+        case 'GES_UrzadzeniaSiecWodociagowa':
+                return {
+                  color: '#0000ff', 
+                  radius: 5,
+                  fillColor: '#0000ff',
+                  fillOpacity: 0.8,
+                  weight: 1
+            };
+        case 'GES_PrzewodGazowy':
+                return {
+                  color: '#bfbf00', 
+                  radius: 5,
+                  fillColor: '#bfbf00',
+                  fillOpacity: 0.8,
+                  weight: 1
+            };
+        case 'GES_UrzadzeniaSiecGazowa':
+                return {
+                  color: '#bfbf00', 
+                  radius: 5,
+                  fillColor: '#bfbf00',
+                  fillOpacity: 0.8,
+                  weight: 1
+            };
+        case 'GES_PrzewodKanalizacyjny':
+                return {
+                  color: '#803300', 
+                  radius: 5,
+                  fillColor: '#803300',
+                  fillOpacity: 0.8,
+                  weight: 1
+            };
+        case 'GES_UrzadzeniaSiecKanalizacyjna':
+                return {
+                  color: '#803300', 
+                  radius: 5,
+                  fillColor: '#803300',
+                  fillOpacity: 0.8,
+                  weight: 1
+            };
+        case 'GES_PrzewodElektroenergetyczny':
+                return {
+                  color: '#ff0000', 
+                  radius: 5,
+                  fillColor: '#ff0000',
+                  fillOpacity: 0.8,
+                  weight: 1
+            };
+        case 'GES_UrzadzeniaSiecElektroenergetyczna':
+                return {
+                  color: '#ff0000', 
+                  radius: 5,
+                  fillColor: '#ff0000',
+                  fillOpacity: 0.8,
+                  weight: 1
+            };
+        case 'GES_PrzewodCieplowniczy':
+                return {
+                  color: '#d200d2', 
+                  radius: 5,
+                  fillColor: '#d200d2',
+                  fillOpacity: 0.8,
+                  weight: 1
+            };
+        case 'GES_UrzadzeniaSiecCieplownicza':
+                return {
+                  color: '#d200d2', 
+                  radius: 5,
+                  fillColor: '#d200d2',
+                  fillOpacity: 0.8,
+                  weight: 1
+            };
+        case 'GES_PrzewodTelekomunikacyjny':
+                return {
+                  color: '#d200d2', 
+                  radius: 5,
+                  fillColor: '#d200d2',
+                  fillOpacity: 0.8,
+                  weight: 1
+            };
+        case 'GES_UrzadzeniaSiecTelekomunikacyjna':
+                return {
+                  color: '#d200d2', 
+                  radius: 5,
+                  fillColor: '#d200d2',
+                  fillOpacity: 0.8,
+                  weight: 1
+            };
           default:
             return {
               color: '#cf382c',
@@ -279,20 +376,22 @@
       
     // Wczytywanie danych GML 
     function parseGML(xml) {
-
-        
-        
-
       const members = xml.getElementsByTagNameNS('*', 'featureMember');
+
       Array.from(members).forEach(member => {
         try {
         const feature = member.firstElementChild;
         const cls = feature.localName;
-        const geom = feature.querySelector('Point, LineString, Polygon');
-        if (!geom) return;
+        const geom = feature.querySelector('Point, LineString, Polygon, Curve');
+        let geometry = null;
+        //if (!geom) return;
+        if (!geom) {
+            geometry =  {type: "Else", coordinates: [0.0, 0.0] };
+
+        } else {
 
         const srsName = geom.getAttribute('srsName') || '';
-        let geometry = null;
+        
 
         if (geom.localName === 'Point') {
           const coords = geom.querySelector('pos').textContent.split(' ').map(Number);
@@ -312,11 +411,19 @@
             coordinates.push(transformCoords(posList[i], posList[i + 1], srsName));
           }
           geometry = { type: 'Polygon', coordinates: [coordinates] };
-        } else {
-            //addAttributeRowWithoutGeometry(attributes);
+        }  else if (geom.localName === 'Curve') {
+            const posListNode = geom.querySelector('posList');
+            if (posListNode) {
+              const coords = posListNode.textContent.trim().split(/\s+/).map(Number);
+              const coordinates = [];
+              for (let i = 0; i < coords.length; i += 2) {
+                coordinates.push(transformCoords(coords[i], coords[i + 1], srsName));
+              }
+              geometry = { type: 'LineString', coordinates };
+            }
+        }
         }
 
-        //const properties = { klasaObiektu: cls }; // <-- dodaj to!
         const properties = Object.assign({ klasaObiektu: cls }, getPropertiesRecursive(feature)); 
         Array.from(feature.children).forEach(el => {
             const propName = el.localName;
@@ -347,8 +454,12 @@
           
 
         if (!featuresByClass[cls]) featuresByClass[cls] = [];
+
         featuresByClass[cls].push({ type: 'Feature', geometry, properties });
-      } catch(err){}
+
+      } catch(err){
+        console.warn("Błąd przetwarzania featureMember:", err);
+      }
     });
 
     
@@ -385,39 +496,13 @@
 
             }
           }).addTo(map);
-        
-          
-          /*if (cls === 'EGB_DzialkaEwidencyjna') {
-            features.forEach(feature => {
-                console.log(feature.properties, feature.geometry.coordinates[0])
-              if (feature.geometry.type === 'Polygon') {
-                const centroid = getPolygonCentroid(feature.geometry.coordinates[0]);
-                const numer = feature.properties.idDzialki || feature.properties.numer || feature.properties.id || 'brak';
-                const label = L.marker(centroid, {
-                  icon: L.divIcon({
-                    className: 'dzialka-label',
-                    html: `<div>${numer.split('.').at(-1)}</div>`,
-                    iconSize: [50, 20],
-                    iconAnchor: [25, 10],
-                    onEachFeature: (feature, label) => {
-                        label.on('click', () => showFeatureInfo(feature.properties));}
-                  })
-                  
-                }
-                
-
-                ).addTo(map);
-              }
-            });
-          }*/
-          
           
 
         layerGroups[cls] = layer;
         addLayerControl(cls, layer);
     } catch(err)
     {
-
+        console.warn(`Błąd tworzenia warstwy ${cls}:`, err);
     }
     finally {
         
@@ -430,7 +515,7 @@
         {
 
           features.forEach(feature => {
-            console.log(feature.properties);
+            //console.log(feature.properties);
             const coords = feature.properties.pos.split(' ').map(Number);
             //console.log('coords', coords, srsName);
             
@@ -449,13 +534,13 @@
                     default:
                       epsg = '2178';
                   } 
-            console.log(String(coords[1]).charAt(0));
+            //console.log(String(coords[1]).charAt(0));
 
             const [x, y] = transformCoords(coords[0], coords[1], `EPSG::${epsg}`);
-            console.log('x, y',x, y);
+            //console.log('x, y',x, y);
 
               const myMarker2 = createTextLabel(feature, [y, x]);
-              console.log('marker load: ', feature.properties.kodObiektu)
+              //console.log('marker load: ', feature.properties.kodObiektu)
               const kodObiektu = feature.properties.kodObiektu[0] || 'none'
 
               if (!innerLayers[kodObiektu]) {
@@ -463,7 +548,7 @@
                   //warstwaKR_ObiektKarto.addLayer(podwarstwyKR[kodObiektu]);
               }
               innerLayers[kodObiektu].addLayer(myMarker2);   
-              console.log(`Obiekty wczytwane dla kodu:${kodObiektu}`);      
+              console.log(`KOD: ${kodObiektu}`);      
       
           }
           );
@@ -659,48 +744,41 @@
         });
       }
 
-const minZoomViz = 14;
+const minZoomViz = 16;
+
+function updateLabelVisibility(kod, layerName){
+    try{
+        if (((map.getZoom() >= minZoomViz)) && map.hasLayer( layerGroups[layerName])){
+            if (!map.hasLayer(innerLayers[kod])) {
+            map.addLayer(innerLayers[kod])
+         }
+        } else {
+            map.removeLayer(innerLayers[kod]); 
+        }  
+        } catch {}
+
+}
 
 // Funkcja kontrolująca widoczność
 function updateObiektKartoVisibility() {
 
-    try{
-    if (!map.hasLayer(innerLayers['EGDE']) && ((map.getZoom() >= minZoomViz)) && map.hasLayer( layerGroups['EGB_DzialkaEwidencyjna'])){
-        map.addLayer(innerLayers['EGDE'])
-    } else {
-        map.removeLayer(innerLayers['EGDE']); 
-    }  
-    } catch {}
-    
-  /*
-  try{
-    if('KR_ObiektKarto' in layerGroups) {
-  if (map.getZoom() >= minZoomViz) {
-    if (!map.hasLayer( layerGroups['KR_ObiektKarto'])) {
-      map.addLayer(layerGroups['KR_ObiektKarto']);
-    }
-  } else {
-    if (map.hasLayer(layerGroups['KR_ObiektKarto'])) {
-      map.removeLayer(layerGroups['KR_ObiektKarto']);
-    }
-  }
-}
-} catch {}
+    // przenieść w przyszłości do pliku json {KOD: Klasa}
+    // EGIB
+    updateLabelVisibility('EGDE','EGB_DzialkaEwidencyjna');
+    updateLabelVisibility('EGBU','EGB_Budynek');
+    updateLabelVisibility('EGUG','EGB_KonturUzytkuGruntowego');
+    updateLabelVisibility('EGKK','EGB_KonturKlasyfikacyjny');
+    updateLabelVisibility('EGBN','EGB_BlokBudynku'); // kondygnacja nadziemmna
+    updateLabelVisibility('EGBP','EGB_BlokBudynku'); // kondygnacja podziemmna
+    updateLabelVisibility('EGBL','EGB_BlokBudynku'); // łącznik
+    updateLabelVisibility('EGBA','EGB_BlokBudynku'); // nawis 
+    updateLabelVisibility('EGOE','EGB_ObrebEwidencyjny');
+    updateLabelVisibility('EGJE','EGB_JednostkaEwidencyjna');
+    updateLabelVisibility('EGPG','EGB_PunktGraniczny');
+    // GESUT
+    updateLabelVisibility('SUWP','GES_PrzewodWodociagowy');
+    // TODO
 
-try{
-    if('PrezentacjaGraficzna' in layerGroups) {
-    if (map.getZoom() >= minZoomViz) {
-      if (!map.hasLayer(layerGroups['PrezentacjaGraficzna'])) {
-        map.addLayer(layerGroups['PrezentacjaGraficzna']);
-      }
-    } else {
-      if (map.hasLayer(layerGroups['PrezentacjaGraficzna'])) {
-        map.removeLayer(layerGroups['PrezentacjaGraficzna']);
-      }
-    }
-}
-  } catch {}*/
-  
 }
 
 // Wywołaj przy starcie i przy każdej zmianie zoomu
